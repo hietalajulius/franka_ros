@@ -7,7 +7,7 @@ import numpy as np
 from interactive_markers.interactive_marker_server import \
     InteractiveMarkerServer, InteractiveMarkerFeedback
 from visualization_msgs.msg import InteractiveMarker, \
-    InteractiveMarkerControl
+    InteractiveMarkerControl, Marker
 from geometry_msgs.msg import PoseStamped
 from franka_msgs.msg import FrankaState
 
@@ -16,6 +16,23 @@ initial_pose_found = False
 pose_pub = None
 # [[min_x, max_x], [min_y, max_y], [min_z, max_z]]
 position_limits = [[-0.6, 0.6], [-0.6, 0.6], [0.05, 0.9]]
+
+def make_sphere(scale=0.3):
+    """
+    This function returns sphere marker for 3D translational movements.
+    :param scale: scales the size of the sphere
+    :return: sphere marker
+    """
+    marker = Marker()
+    marker.type = Marker.SPHERE
+    marker.scale.x = scale * 0.45
+    marker.scale.y = scale * 0.45
+    marker.scale.z = scale * 0.45
+    marker.color.r = 0.5
+    marker.color.g = 0.5
+    marker.color.b = 0.5
+    marker.color.a = 1.0
+    return marker
 
 
 def publisherCallback(msg, link_name):
@@ -58,15 +75,14 @@ def processFeedback(feedback):
 
 if __name__ == "__main__":
     rospy.init_node("equilibrium_pose_node")
-    state_sub = rospy.Subscriber("franka_state_controller/franka_states",
-                                 FrankaState, franka_state_callback)
-    listener = tf.TransformListener()
+    state_sub = rospy.Subscriber("panda_mujoco_control/franka_states", FrankaState, franka_state_callback)
     link_name = rospy.get_param("~link_name")
 
     # Get initial pose for the interactive marker
     while not initial_pose_found:
         rospy.sleep(1)
     state_sub.unregister()
+
 
     pose_pub = rospy.Publisher(
         "equilibrium_pose", PoseStamped, queue_size=10)
@@ -75,16 +91,13 @@ if __name__ == "__main__":
     int_marker.header.frame_id = link_name
     int_marker.scale = 0.3
     int_marker.name = "equilibrium_pose"
-    int_marker.description = ("Equilibrium Pose\nBE CAREFUL! "
-                              "If you move the \nequilibrium "
-                              "pose the robot will follow it\n"
-                              "so be aware of potential collisions")
     int_marker.pose = marker_pose.pose
     # run pose publisher
     rospy.Timer(rospy.Duration(0.005),
                 lambda msg: publisherCallback(msg, link_name))
 
     # insert a box
+    '''
     control = InteractiveMarkerControl()
     control.orientation.w = 1
     control.orientation.x = 1
@@ -93,6 +106,7 @@ if __name__ == "__main__":
     control.name = "rotate_x"
     control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
     int_marker.controls.append(control)
+    '''
 
     control = InteractiveMarkerControl()
     control.orientation.w = 1
@@ -102,6 +116,8 @@ if __name__ == "__main__":
     control.name = "move_x"
     control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
     int_marker.controls.append(control)
+
+    '''
     control = InteractiveMarkerControl()
     control.orientation.w = 1
     control.orientation.x = 0
@@ -110,6 +126,7 @@ if __name__ == "__main__":
     control.name = "rotate_y"
     control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
     int_marker.controls.append(control)
+    '''
     control = InteractiveMarkerControl()
     control.orientation.w = 1
     control.orientation.x = 0
@@ -118,6 +135,8 @@ if __name__ == "__main__":
     control.name = "move_y"
     control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
     int_marker.controls.append(control)
+
+    '''
     control = InteractiveMarkerControl()
     control.orientation.w = 1
     control.orientation.x = 0
@@ -126,6 +145,8 @@ if __name__ == "__main__":
     control.name = "rotate_z"
     control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
     int_marker.controls.append(control)
+    '''
+
     control = InteractiveMarkerControl()
     control.orientation.w = 1
     control.orientation.x = 0
@@ -134,6 +155,18 @@ if __name__ == "__main__":
     control.name = "move_z"
     control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
     int_marker.controls.append(control)
+
+    control = InteractiveMarkerControl()
+    control.orientation.w = 1
+    control.orientation.x = 1
+    control.orientation.y = 1
+    control.orientation.z = 1
+    control.name = "move_3D"
+    control.always_visible = True
+    control.markers.append(make_sphere())
+    control.interaction_mode = InteractiveMarkerControl.MOVE_3D
+    int_marker.controls.append(control)
+
     server.insert(int_marker, processFeedback)
 
     server.applyChanges()
