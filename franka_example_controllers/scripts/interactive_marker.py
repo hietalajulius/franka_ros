@@ -75,7 +75,13 @@ def processFeedback(feedback):
 
 if __name__ == "__main__":
     rospy.init_node("equilibrium_pose_node")
-    state_sub = rospy.Subscriber("panda_mujoco_control/franka_states", FrankaState, franka_state_callback)
+    simulation = rospy.get_param("/simulation")
+    if simulation:
+        print("SIM")
+        state_sub = rospy.Subscriber("panda_mujoco_control/franka_states", FrankaState, franka_state_callback)
+    else:
+        print("REAL")
+        state_sub = rospy.Subscriber("franka_state_controller/franka_states", FrankaState, franka_state_callback)
     link_name = rospy.get_param("~link_name")
 
     # Get initial pose for the interactive marker
